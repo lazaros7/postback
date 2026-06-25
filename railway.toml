@@ -2,5 +2,5 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python postback.py"
+startCommand = "gunicorn postback:app --bind 0.0.0.0:$PORT --workers 2 --timeout 30"
 restartPolicyType = "always"
