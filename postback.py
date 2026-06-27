@@ -276,17 +276,22 @@ def postback():
         return "INVALID_SIGNATURE", 403
 
     # ── 2. Extract params ───────────────────────────────────────
+    # Monetag sends user id as 'telegram_id' or 'subid' depending on postback config
     subid             = params.get("subid", "").strip()
+    telegram_id_param = params.get("telegram_id", "").strip()
     reward_event_type = params.get("reward_event_type", "").strip()
 
-    if not subid:
-        logger.warning("[POSTBACK] Missing subid")
-        return "OK", 200  # Return 200 so Monetag doesn't spam retries
+    # Accept whichever param Monetag sends
+    raw_uid = telegram_id_param or subid
+
+    if not raw_uid:
+        logger.warning(f"[POSTBACK] Missing user id — params: {dict(params)}")
+        return "OK", 200
 
     try:
-        user_id = int(subid)
+        user_id = int(raw_uid)
     except ValueError:
-        logger.warning(f"[POSTBACK] Non-integer subid: {subid!r}")
+        logger.warning(f"[POSTBACK] Non-integer user id: {raw_uid!r}")
         return "OK", 200
 
     # ── 3. Only process confirmed reward events ─────────────────
@@ -358,27 +363,6 @@ def balance(user_id: int):
 # ══════════════════════════════════════════════════════════════
 #                    🚀 Startup
 # ══════════════════════════════════════════════════════════════
-
-@app.route("/debug", methods=["GET"])
-def debug():
-    """Shows the real database connection error."""
-    import traceback
-    try:
-        conn = get_db()
-        with conn.cursor() as c:
-            c.execute("SELECT COUNT(*) as n FROM users")
-            n = c.fetchone()["n"]
-        conn.close()
-        return jsonify({"db": "connected", "users": n}), 200
-    except Exception as e:
-        return jsonify({
-            "db": "failed",
-            "error": str(e),
-            "DATABASE_URL_set": bool(os.getenv("DATABASE_URL")),
-            "DATABASE_URL_prefix": os.getenv("DATABASE_URL", "")[:30] + "..."
-        }), 500
-
-
 
 if __name__ == "__main__":
     ensure_tables()
