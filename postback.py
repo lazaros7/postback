@@ -295,7 +295,7 @@ def postback():
         return "OK", 200
 
     # ── 3. Only process confirmed reward events ─────────────────
-    if reward_event_type != "reward":
+    if reward_event_type not in ("reward", "valued"):
         logger.info(f"[POSTBACK] Skipping event type: {reward_event_type!r}")
         return "OK", 200
 
